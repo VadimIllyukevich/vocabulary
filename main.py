@@ -1,5 +1,5 @@
 from tkinter import filedialog, messagebox, END, Frame, Label, Toplevel, Text, Button, Menu, WORD, Scrollbar, \
-    Listbox
+    Listbox, LabelFrame
 from tkinter.tix import Tk
 from PIL import Image
 from PIL import ImageTk
@@ -8,8 +8,19 @@ from pymorphy2 import MorphAnalyzer
 from help import HELPTEXT
 import win32api
 import pickle
+import time
 
 vocabulary = []
+
+
+class Lexeme:
+    def __init__(self, lemma, tags, endings):
+        self.lemma = lemma
+        self.tags = tags
+        self.endings = endings
+
+    def print_args(self):
+        return self.lemma, self.tags, self.endings
 
 
 def newFile():
@@ -56,6 +67,7 @@ def cleanWord():
 
 def addWord():
     global vocabulary
+    start_time = time.time()
     words = {}
     analyzer = MorphAnalyzer()
     vocabulary.append(inputText.get(1.0, END))
@@ -70,8 +82,12 @@ def addWord():
             words.update({word_word: {'lemma': word_lemma, 'tag': word_tags, 'ending': word_ending}})
     sorted_words = sorted(words)
     for key in sorted_words:
-        outputText.insert(0, str(words[key]['lemma']) + '      ' + str(words[key]['tag']) + '      ' \
-                          + str(words[key]['ending']))
+        lexeme = Lexeme((words[key]['lemma']), (words[key]['tag']), (words[key]['ending']))
+        outputText.insert(0, str(lexeme.lemma) + '      ' + str(lexeme.tags) + '      ' \
+                          + str(lexeme.endings))
+    end_time = time.time()
+    result_time = end_time - start_time
+    print(str(result_time) + " seconds")
     vocabulary.clear()
 
 
@@ -107,7 +123,6 @@ def generateForm():
     tags_text = tagsText.get(1.0, END).replace('\n', "")
     s = tags_text
     tags_for_generate = s.replace(',', '').split()
-
     if lemma_text or tags_text:
         children = Toplevel()
         children.title('Generated word')
@@ -116,7 +131,6 @@ def generateForm():
         for i in range(len(tags_for_generate)):
             over_temporary_generated_form = started_temporary_generated_form.inflect({tags_for_generate[i]})
             generated_form = over_temporary_generated_form
-            print(generated_form)
         lemmaLabel = Label(children, text=generated_form.word)
         lemmaLabel.pack(padx=10, pady=30)
     else:
@@ -144,7 +158,6 @@ def generateWord():
     generateFormButton = Button(childrenFrame, text='Сгенерировать', width=25, height=2)
     generateFormButton.config(command=generateForm)
     generateFormButton.pack(side='right')
-
     children.title('Генерация слова')
     lemmaFrame.pack(side='top')
     tagsFrame.pack(side='top')
@@ -156,11 +169,11 @@ class App(Tk):
         super().__init__()
         # -----------------------------------------INPUT--------------------------------------------------
         global inputText
-        inputFrame = Frame(self, bd=10)
+        inputFrame = LabelFrame(self, bd=0, text='Ввод текста')
         inputText = Text(inputFrame, height=8, width=80, wrap=WORD)
         # -------------------------------------------OUTPUT------------------------------------------------
         global outputText
-        outputFrame = Frame(self, bd=0)
+        outputFrame = LabelFrame(self, bd=0, text='Вывод словаря')
         outputText = Listbox(outputFrame, height=10, width=120)
         scrollb = Scrollbar(outputFrame, command=outputText.yview)
         scrollb.grid(row=4, column=5, sticky='nsew')
